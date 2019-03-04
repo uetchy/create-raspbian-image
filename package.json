@@ -1,0 +1,43 @@
+{
+  "name": "raspbian-wizard",
+  "description": "raspbian-wizard",
+  "version": "0.0.0",
+  "author": "Yasuaki Uechi <y@uechi.io> (https://uechi.io/)",
+  "main": "index.js",
+  "scripts": {
+    "build": "babel -d lib src --delete-dir-on-start",
+    "publish": "yarn build && np",
+    "test": "jest"
+  },
+  "dependencies": {
+    "axios": "^0.18.0",
+    "bytes": "^3.1.0",
+    "cli-progress": "^2.1.1",
+    "drivelist": "^8.0.1",
+    "extract-zip": "^1.6.7",
+    "inquirer": "^6.2.2",
+    "meow": "^5.0.0",
+    "mustache": "^3.0.1",
+    "pbkdf2": "^3.0.17"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.3.4",
+    "@babel/node": "^7.2.2",
+    "@babel/preset-env": "^7.3.4",
+    "babel-jest": "^24.1.0",
+    "jest": "^24.1.0"
+  },
+  "bugs": {
+    "url": "https://github.com/uetchy/raspbian-wizard/issues"
+  },
+  "homepage": "https://github.com/uetchy/raspbian-wizard",
+  "keywords": [
+    "raspbian-wizard"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uetchy/raspbian-wizard.git"
+  }
+}
