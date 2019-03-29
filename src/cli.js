@@ -1,4 +1,3 @@
-import fs from 'fs'
 import { tmpdir } from 'os'
 import { join, basename } from 'path'
 import inquirer from 'inquirer'
@@ -9,7 +8,7 @@ import * as drivelist from 'drivelist'
 import { generateWPAConfig } from './util/wpa'
 import { fileStreamWithProgress, extract } from './util/file'
 
-export default async function cli(args) {
+export default async function cli() {
   console.log('Automatic Raspbian Image Writer & Setup Wizard')
   const drives = await drivelist.list()
   const response = await inquirer.prompt([

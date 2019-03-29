@@ -1,6 +1,6 @@
 {
-  "name": "raspbian-wizard",
-  "description": "raspbian-wizard",
+  "name": "pie-filling",
+  "description": "pie-filling",
   "version": "0.0.0",
   "author": "Yasuaki Uechi <y@uechi.io> (https://uechi.io/)",
   "main": "index.js",
@@ -13,7 +13,7 @@
     "axios": "^0.18.0",
     "bytes": "^3.1.0",
     "cli-progress": "^2.1.1",
-    "drivelist": "^8.0.1",
+    "drivelist": "^8.0.6",
     "extract-zip": "^1.6.7",
     "inquirer": "^6.2.2",
     "meow": "^5.0.0",
@@ -22,22 +22,35 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.2.3",
-    "@babel/core": "^7.3.4",
+    "@babel/core": "^7.4.0",
     "@babel/node": "^7.2.2",
-    "@babel/preset-env": "^7.3.4",
-    "babel-jest": "^24.1.0",
-    "jest": "^24.1.0"
+    "@babel/preset-env": "^7.4.2",
+    "babel-jest": "^24.5.0",
+    "eslint": "^5.15.3",
+    "eslint-plugin-jest": "^22.4.1",
+    "husky": "^1.3.1",
+    "jest": "^24.5.0",
+    "lint-staged": "^8.1.5",
+    "prettier": "^1.16.4",
+    "pretty-quick": "^1.10.0"
   },
   "bugs": {
-    "url": "https://github.com/uetchy/raspbian-wizard/issues"
+    "url": "https://github.com/uetchy/pie-filling/issues"
   },
-  "homepage": "https://github.com/uetchy/raspbian-wizard",
+  "homepage": "https://github.com/uetchy/pie-filling",
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged",
+      "pre-push": "yarn test"
+    }
+  },
   "keywords": [
-    "raspbian-wizard"
+    "pie-filling",
+    "raspberry pi"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/uetchy/raspbian-wizard.git"
+    "url": "https://github.com/uetchy/pie-filling.git"
   }
 }
