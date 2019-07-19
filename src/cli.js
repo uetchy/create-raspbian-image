@@ -3,48 +3,91 @@ import { join, basename } from 'path'
 import inquirer from 'inquirer'
 import bytes from 'bytes'
 import axios from 'axios'
+import fs from 'fs'
+import cachedir from 'cachedir'
 import * as drivelist from 'drivelist'
+import imageWrite from 'etcher-image-write'
 
 import { generateWPAConfig } from './util/wpa'
 import { fileStreamWithProgress, extract } from './util/file'
 
+const raspbianCatalog = [
+  {
+    name: 'Raspbian Buster with desktop (2019-07-12)',
+    url:
+      'https://downloads.raspberrypi.org/raspbian/images/raspbian-2019-07-12/2019-07-10-raspbian-buster.zip',
+    file: '2019-07-10-raspbian-buster.img',
+  },
+  {
+    name: 'Raspbian Buster Lite (2019-07-12)',
+    url:
+      'https://downloads.raspberrypi.org/raspbian_lite/images/raspbian_lite-2019-07-12/2019-07-10-raspbian-buster-lite.zip',
+    file: '2019-07-10-raspbian-buster-lite.img',
+  },
+]
+const CACHE_DIR = cachedir('create-raspbian-image')
+
+function writeImage(sourceImagePath, destDrive) {
+  return new Promise((resolve, reject) => {
+    const emitter = imageWrite.write(
+      {
+        fd: fs.openSync(destDrive.raw, 'rs+'),
+        device: destDrive.raw,
+        size: destDrive.size,
+      },
+      {
+        stream: fs.createReadStream(sourceImagePath),
+        size: fs.statSync(sourceImagePath).size,
+      },
+      {
+        check: true,
+      }
+    )
+
+    emitter.on('progress', (state) => {
+      console.log(state)
+    })
+
+    emitter.on('error', (error) => {
+      reject(error)
+    })
+
+    emitter.on('done', (result) => {
+      resolve(result)
+    })
+  })
+}
+
 export default async function cli() {
   console.log('Automatic Raspbian Image Writer & Setup Wizard')
+
   const drives = await drivelist.list()
-  const response = await inquirer.prompt([
+  console.log(drives)
+  if (drives.length === 0) {
+    console.log('No removable drives found')
+    return
+  }
+
+  const answer = await inquirer.prompt([
     {
       type: 'list',
-      name: 'target',
-      message: 'Choose target device',
-      choices: drives.map((d) => ({
-        name: `${d.device} - ${d.description} (${bytes(d.size, {
-          unitSeparator: ' ',
-        })})`,
-        value: d,
+      name: 'image',
+      message: 'Choose desired Raspbian image',
+      choices: raspbianCatalog.map((image) => ({
+        name: image.name,
+        value: image,
       })),
     },
     {
       type: 'list',
-      name: 'source',
-      message: 'Choose version for Raspbian image',
-      choices: [
-        {
-          name: 'Raspbian Stretch Lite (November 2018)',
-          value: {
-            name: 'Raspbian Stretch Lite',
-            url:
-              'http://director.downloads.raspberrypi.org/raspbian_lite/images/raspbian_lite-2018-11-15/2018-11-13-raspbian-stretch-lite.zip',
-          },
-        },
-        {
-          name: 'Raspbian Stretch with desktop (Latest)',
-          value: {
-            name: 'Raspbian Stretch with desktop',
-            slug: 'raspbian-stretch-with-desktop',
-            url: 'https://downloads.raspberrypi.org/raspbian_latest',
-          },
-        },
-      ],
+      name: 'device',
+      message: 'Choose target device',
+      choices: drives.map((drive) => ({
+        name: `${drive.device} - ${drive.description} (${bytes(drive.size, {
+          unitSeparator: ' ',
+        })})`,
+        value: drive,
+      })),
     },
     {
       type: 'confirm',
@@ -60,48 +103,35 @@ export default async function cli() {
       type: 'input',
       name: 'wifi-ssid',
       message: 'Wi-Fi SSID:',
-      when: (a) => a.wifi,
+      when: (conf) => conf.wifi,
     },
     {
       type: 'password',
       name: 'wifi-passphrase',
       message: 'Wi-Fi Passphrase:',
-      when: (a) => a.wifi,
+      when: (conf) => conf.wifi,
     },
   ])
-  console.log(response)
 
-  if (!response.target.isRemovable) {
-    const { sure } = await inquirer.prompt({
-      type: 'confirm',
-      name: 'sure',
-      message:
-        'Target disk seems not to be removable disk. Are you sure to continue?',
+  const tmpDir = tmpdir()
+
+  // Download Raspbmian image
+  const archiveFilename = basename(answer.image.url)
+  const archivePath = join(CACHE_DIR, archiveFilename)
+
+  if (!fs.existsSync(archivePath)) {
+    console.log(`Downloading ${answer.image.name} to ${archiveFilename}`)
+    const raspbianData = await axios.get(answer.image.url, {
+      responseType: 'stream',
     })
-    if (!sure) {
-      return
-    }
+    await fileStreamWithProgress(archivePath, raspbianData)
   }
 
-  const { source, ssh, wifi } = response
-  const basePath = tmpdir()
-
-  // Download Raspbian image
-  const archiveFilename = basename(source.url)
-  const archivePath = join(basePath, archiveFilename)
-
-  console.log('Downloading', source.name, archivePath)
-  const raspbianData = await axios.get(source.url, {
-    responseType: 'stream',
-  })
-  await fileStreamWithProgress(archivePath, raspbianData)
-
   // Extract Raspbian image
-  const imageFilename = `${basename(source.url, '.zip')}.img`
-  const imagePath = join(basePath, imageFilename)
+  console.log(`Extracting ${archivePath}`)
+  await extract(archivePath, tmpDir)
 
-  console.log('Extracting', imageFilename)
-  await extract(archivePath, basePath)
+  const imagePath = join(tmpDir, answer.image.file)
   console.log(imagePath)
 
   // Confirm
@@ -116,16 +146,21 @@ export default async function cli() {
 
   // Write Raspbian image to SD card
   // TODO: dd
-  // NOTE:
+  console.log('Write', imagePath, answer.device.raw)
+  await writeImage(imagePath, answer.device)
 
-  // Preconfigure
-  if (ssh) {
+  // Configure SSH
+  if (answer.ssh) {
     console.log('SSH: $ touch /boot/ssh')
   }
-  if (wifi) {
+
+  // Configure Wi-Fi
+  if (answer.wifi) {
     console.log('Wi-Fi: cat <conf> > /boot/wpa_supplicant.conf')
-    console.log(
-      generateWPAConfig(response['wifi-ssid'], response['wifi-passphrase'])
+    const cryptPSK = generateWPAConfig(
+      answer['wifi-ssid'],
+      answer['wifi-passphrase']
     )
+    console.log(cryptPSK)
   }
 }

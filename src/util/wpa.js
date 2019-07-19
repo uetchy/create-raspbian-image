@@ -8,9 +8,11 @@ export function encryptWiFiCredential(ssid, plainPassphrase) {
 }
 
 export function generateWPAConfig(ssid, passphrase) {
-  const template = `network={
+  const template = `
+network={
   ssid="{{ssid}}"
   psk={{passphrase}}
+  key_mgnt=WPA-PSK
 }
 `
   return Mustache.render(template, {
