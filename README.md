@@ -1,5 +1,9 @@
-# pie-filling
+# Create Raspbian Image
+
+> [WIP] This project is overwhelmingly in development state. Do no use it in production.
+
+## Usage
 
 ```
-pie-filling /Volumes/Raspbian
+create-raspbian-image
 ```

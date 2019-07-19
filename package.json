@@ -1,9 +1,9 @@
 {
-  "name": "pie-filling",
-  "description": "pie-filling",
+  "name": "create-raspbian-image",
+  "description": "🥧 Create Raspbian image armed with preconfigured Wi-Fi and SSH settings.",
   "version": "0.0.0",
   "author": "Yasuaki Uechi <y@uechi.io> (https://uechi.io/)",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "build": "babel -d lib src --delete-dir-on-start",
     "publish": "yarn build && np",
@@ -39,6 +39,7 @@
     "prettier": "^1.16.4",
     "pretty-quick": "^1.10.0"
   },
+  "bin": "lib/index.js",
   "bugs": {
     "url": "https://github.com/uetchy/pie-filling/issues"
   },
